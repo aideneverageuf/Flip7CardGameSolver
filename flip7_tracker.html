@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flip 7 Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --felt: #12302A;
+    --felt-panel: #1B3F37;
+    --felt-panel-2: #234B41;
+    --parchment: #F1E8D6;
+    --parchment-dim: #E4D8BF;
+    --ink: #1C2420;
+    --ink-soft: #4A5A52;
+    --gold: #C9A227;
+    --gold-bright: #E4C34C;
+    --rust: #A6402C;
+    --freeze: #3E7CB1;
+    --flip3: #6E52A8;
+    --secondchance: #2F8577;
+    --line: rgba(241,232,214,0.14);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: radial-gradient(ellipse at top, #17392F 0%, var(--felt) 55%, #0D211C 100%);
+    color: var(--parchment);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+
+  h1, h2, h3, .display {
+    font-family: 'Fraunces', serif;
+  }
+
+  /* ---------------- Top bar ---------------- */
+  #topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0));
+  }
+
+  #topbar h1 {
+    margin: 0;
+    font-size: 1.7rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  #topbar h1 .accent { color: var(--gold-bright); font-style: italic; font-weight: 600; }
+
+  #status-chip {
+    font-size: 0.85rem;
+    background: var(--felt-panel);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 7px 16px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+  #status-chip b { color: var(--gold-bright); font-weight: 600; }
+
+  #undo-btn {
+    margin-left: 4px;
+    background: transparent;
+    border: 1px solid var(--rust);
+    color: #F0C9BE;
+    border-radius: 999px;
+    padding: 5px 13px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  #undo-btn:hover:not(:disabled) { background: var(--rust); color: #FBF0E9; }
+  #undo-btn:disabled { opacity: 0.3; cursor: not-allowed; border-color: var(--line); color: var(--parchment-dim); }
+
+  main {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 24px 20px 0;
+  }
+
+  /* ---------------- Setup screen ---------------- */
+  #setup-screen {
+    background: var(--felt-panel);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 34px;
+    max-width: 560px;
+    margin: 40px auto;
+  }
+  #setup-screen h2 { margin-top: 0; font-size: 1.5rem; }
+  #setup-screen p.sub { color: var(--parchment-dim); margin-top: -8px; font-size: 0.92rem; line-height: 1.5;}
+
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 18px 0 26px;
+  }
+  .stepper button {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--felt-panel-2);
+    color: var(--parchment);
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
+  .stepper button:hover { background: var(--gold); color: var(--ink); }
+  .stepper .count {
+    font-family: 'Fraunces', serif;
+    font-size: 2rem;
+    min-width: 48px;
+    text-align: center;
+  }
+
+  #name-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 26px;
+  }
+  #name-fields input {
+    background: var(--felt);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 10px 12px;
+    color: var(--parchment);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+  }
+  #name-fields input::placeholder { color: var(--ink-soft); }
+  #name-fields input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+  .btn-primary {
+    background: var(--gold);
+    color: var(--ink);
+    border: none;
+    border-radius: 10px;
+    padding: 13px 22px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    width: 100%;
+  }
+  .btn-primary:hover { background: var(--gold-bright); }
+  .btn-primary:focus-visible { outline: 3px solid var(--parchment); outline-offset: 2px; }
+
+  /* ---------------- Player scorecards ---------------- */
+  #players-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  .player-card {
+    background: var(--parchment);
+    color: var(--ink);
+    border-radius: 14px;
+    padding: 14px 15px;
+    position: relative;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.25);
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .player-card.active-turn {
+    box-shadow: 0 0 0 3px var(--gold), 0 6px 14px rgba(201,162,39,0.35);
+    transform: translateY(-2px);
+  }
+  .player-card.busted { opacity: 0.55; }
+  .player-card.stayed:not(.active-turn) { opacity: 0.85; }
+
+  .player-card .name-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .player-card .name {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 1.05rem;
+  }
+  .dealer-chip {
+    background: var(--gold);
+    color: var(--ink);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    border-radius: 999px;
+    padding: 2px 8px;
+    text-transform: uppercase;
+  }
+  .player-card .total-score {
+    font-family: 'Fraunces', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .player-card .status-line {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+  .status-active { color: #2E6B4F; }
+  .status-busted { color: var(--rust); }
+  .status-stayed { color: var(--ink-soft); }
+
+  .card-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+    min-height: 22px;
+  }
+  .chip {
+    font-size: 0.72rem;
+    font-weight: 700;
+    border-radius: 6px;
+    padding: 2px 6px;
+    color: #F7F1E1;
+  }
+  .chip.mod { background: var(--gold); color: var(--ink); }
+  .chip.sc { background: var(--secondchance); }
+
+  .round-if-stay {
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+
+  /* ---------------- Table / action area ---------------- */
+  #table {
+    background: var(--felt-panel);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 22px;
+    margin-bottom: 20px;
+  }
+  #prompt-text {
+    font-family: 'Fraunces', serif;
+    font-size: 1.15rem;
+    margin-bottom: 4px;
+  }
+  #prompt-sub {
+    font-size: 0.82rem;
+    color: var(--parchment-dim);
+    margin-bottom: 16px;
+  }
+
+  .card-grid-section { margin-bottom: 14px; }
+  .card-grid-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--parchment-dim);
+    margin-bottom: 6px;
+  }
+  .card-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .card-btn {
+    position: relative;
+    border: none;
+    border-radius: 10px;
+    min-width: 52px;
+    height: 62px;
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: #FBF6E9;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+    transition: transform 0.08s;
+  }
+  .card-btn:hover:not(:disabled) { transform: translateY(-3px); }
+  .card-btn:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+    filter: grayscale(0.6);
+  }
+  .card-btn .count {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.62rem;
+    opacity: 0.85;
+    margin-top: 1px;
+  }
+  .card-btn.action-card {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.68rem;
+    padding: 4px 8px;
+    min-width: 78px;
+    letter-spacing: 0.02em;
+    text-align: center;
+  }
+
+  .choice-row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .choice-btn {
+    background: var(--felt-panel-2);
+    border: 1px solid var(--line);
+    color: var(--parchment);
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.95rem;
+  }
+  .choice-btn:hover { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+
+  .hitstay-row { display: flex; gap: 12px; margin-top: 4px; }
+  .hit-btn, .stay-btn {
+    flex: 1;
+    padding: 16px;
+    border-radius: 12px;
+    border: none;
+    font-family: 'Fraunces', serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .hit-btn { background: var(--rust); color: #FBF0E9; }
+  .hit-btn:hover { background: #C24A32; }
+  .stay-btn { background: var(--felt-panel-2); color: var(--parchment); border: 1px solid var(--line); }
+  .stay-btn:hover { background: var(--gold); color: var(--ink); }
+
+  .bust-prob {
+    font-size: 0.85rem;
+    color: var(--parchment-dim);
+    margin-bottom: 10px;
+  }
+  .bust-prob b { color: var(--gold-bright); }
+
+  /* ---------------- Deck summary ---------------- */
+  #deck-summary {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    align-items: center;
+    font-size: 0.78rem;
+    color: var(--parchment-dim);
+    border-top: 1px solid var(--line);
+    margin-top: 18px;
+    padding-top: 14px;
+  }
+  #deck-summary .totals b { color: var(--gold-bright); }
+  #deck-composition {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  #deck-composition span {
+    background: var(--felt);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 2px 7px;
+  }
+
+  /* ---------------- Log ---------------- */
+  #log-panel {
+    background: #0F241F;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 18px;
+    max-height: 220px;
+    overflow-y: auto;
+    font-size: 0.8rem;
+    line-height: 1.55;
+    color: var(--parchment-dim);
+    font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  }
+  #log-panel div.log-round { color: var(--gold-bright); font-weight: 700; margin-top: 8px; }
+  #log-panel div.log-round:first-child { margin-top: 0; }
+  #log-panel div.log-result { color: var(--parchment); }
+
+  /* ---------------- Game over ---------------- */
+  #gameover-screen {
+    background: var(--felt-panel);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 36px;
+    max-width: 480px;
+    margin: 40px auto;
+    text-align: center;
+  }
+  #gameover-screen h2 { font-size: 1.8rem; margin-bottom: 6px; }
+  #gameover-screen .winner { color: var(--gold-bright); font-size: 1.3rem; margin-bottom: 18px; }
+  #final-standings { text-align: left; margin: 0 auto 22px; max-width: 280px; }
+  #final-standings div {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.95rem;
+  }
+
+  [hidden] { display: none !important; }
+
+  @media (max-width: 560px) {
+    #topbar { padding: 14px 16px; }
+    main { padding: 16px 12px 0; }
+    #name-fields { grid-template-columns: 1fr; }
+    .card-btn { min-width: 44px; height: 54px; font-size: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <h1>Flip <span class="accent">7</span> Tracker</h1>
+  <div id="status-chip" hidden>
+    Round <b id="status-round">1</b>
+    &nbsp;·&nbsp;
+    Dealer <b id="status-dealer">-</b>
+    <button type="button" id="undo-btn" disabled>↺ Undo last entry</button>
+  </div>
+</div>
+
+<main>
+
+  <section id="setup-screen">
+    <h2>New game</h2>
+    <p class="sub">Enter every card exactly as it's drawn from your real deck by tapping it below — no typing, no typos. Player 1 deals first and always deals themselves last.</p>
+    <div class="stepper">
+      <button type="button" id="dec-players" aria-label="Fewer players">−</button>
+      <div class="count" id="player-count">4</div>
+      <button type="button" id="inc-players" aria-label="More players">+</button>
+      <span style="color:var(--ink-soft); font-size:0.85rem;">players</span>
+    </div>
+    <div id="name-fields"></div>
+    <button class="btn-primary" id="start-game-btn">Start game</button>
+  </section>
+
+  <section id="game-screen" hidden>
+    <div id="players-row"></div>
+
+    <div id="table">
+      <div id="prompt-text">—</div>
+      <div id="prompt-sub"></div>
+      <div id="action-area"></div>
+
+      <div id="deck-summary">
+        <div class="totals">Deck <b id="deck-total">94</b> &nbsp;/&nbsp; Discard <b id="discard-total">0</b></div>
+        <div id="deck-composition"></div>
+      </div>
+    </div>
+
+    <div id="log-panel"></div>
+  </section>
+
+  <section id="gameover-screen" hidden>
+    <h2>Game over</h2>
+    <div class="winner" id="winner-line"></div>
+    <div id="final-standings"></div>
+    <button class="btn-primary" id="new-game-btn">Start a new game</button>
+  </section>
+
+</main>
+
+<script>
+// =====================================================================
+// Engine (UI-agnostic game logic)
+// =====================================================================
+
+function buildSpec() {
+    const spec = [];
+    spec.push(['0', 1, { kind: 'number', value: 0 }]);
+    for (let v = 1; v <= 12; v++) spec.push([String(v), v, { kind: 'number', value: v }]);
+    for (const v of [2, 4, 6, 8, 10]) spec.push(['+' + v, 1, { kind: 'modAdd', value: v }]);
+    spec.push(['x2', 1, { kind: 'modX2', value: 0 }]);
+    spec.push(['FREEZE', 3, { kind: 'freeze', value: 0 }]);
+    spec.push(['FLIP THREE', 3, { kind: 'flip3', value: 0 }]);
+    spec.push(['SECOND CHANCE', 3, { kind: 'sc', value: 0 }]);
+    return spec;
+}
+
+function makePlayer(name) {
+    return { name, numberCards: [], modifierCards: [], hasSecondChance: false, active: true, busted: false, totalScore: 0 };
+}
+function numberValues(p) { return p.numberCards.map(c => c.value); }
+function hasFlip7(p) { return new Set(numberValues(p)).size >= 7; }
+function roundScore(p) {
+    if (p.busted) return 0;
+    let total = numberValues(p).reduce((a, b) => a + b, 0);
+    if (p.modifierCards.some(m => m.kind === 'modX2')) total *= 2;
+    total += p.modifierCards.filter(m => m.kind === 'modAdd').reduce((a, m) => a + m.value, 0);
+    if (hasFlip7(p)) total += 15;
+    return total;
+}
+function resetRound(p) {
+    p.numberCards = []; p.modifierCards = []; p.hasSecondChance = false; p.active = true; p.busted = false;
+}
+
+class Game {
+    constructor(names, ui) {
+        this.players = names.map(makePlayer);
+        this.dealerIndex = 0;
+        this.remaining = {}; this.discarded = {}; this.meta = {};
+        for (const [label, count, meta] of buildSpec()) {
+            this.remaining[label] = count; this.discarded[label] = 0; this.meta[label] = meta;
+        }
+        this.ui = ui;
+        this.roundNumber = 0;
+    }
+    totalRemaining() { return Object.values(this.remaining).reduce((a, b) => a + b, 0); }
+    totalDiscarded() { return Object.values(this.discarded).reduce((a, b) => a + b, 0); }
+    discardOne(label) { this.discarded[label]++; }
+    reshuffleIfNeeded() {
+        if (this.totalRemaining() > 0) return;
+        this.ui.log('Deck is empty — shuffling the discard pile into a new deck.', 'shuffle');
+        this.remaining = { ...this.discarded };
+        for (const k in this.discarded) this.discarded[k] = 0;
+    }
+    turnOrder() {
+        const n = this.players.length; const order = [];
+        for (let i = 1; i <= n; i++) order.push((this.dealerIndex + i) % n);
+        return order;
+    }
+    roundIsOver() {
+        if (this.players.some(hasFlip7)) return true;
+        return this.players.every(p => !p.active);
+    }
+    bustProbability(p) {
+        const total = this.totalRemaining();
+        if (total === 0 || p.hasSecondChance) return 0;
+        const have = new Set(numberValues(p));
+        let bad = 0;
+        for (const v of have) bad += this.remaining[String(v)] || 0;
+        return (100 * bad) / total;
+    }
+    async promptDrawnCard(who, context) {
+        this.reshuffleIfNeeded();
+        this.ui.render();
+        const enabled = Object.keys(this.remaining).filter(l => this.remaining[l] > 0);
+        const label = await this.ui.askCardDraw(who, context, enabled);
+        this.remaining[label]--;
+        return label;
+    }
+    async resolveCard(playerIdx, label) {
+        const player = this.players[playerIdx];
+        const meta = this.meta[label];
+
+        if (meta.kind === 'number') {
+            if (numberValues(player).includes(meta.value)) {
+                if (player.hasSecondChance) {
+                    this.ui.log(`${player.name} drew a duplicate ${meta.value} → SECOND CHANCE cancels it.`);
+                    this.discardOne('SECOND CHANCE'); this.discardOne(label);
+                    player.hasSecondChance = false;
+                } else {
+                    this.ui.log(`${player.name} drew a duplicate ${meta.value} → BUSTS.`);
+                    player.busted = true; player.active = false;
+                    this.discardOne(label);
+                }
+                return;
+            }
+            player.numberCards.push({ label, value: meta.value });
+            this.ui.log(`${player.name} drew ${meta.value}.`);
+            if (hasFlip7(player)) this.ui.log(`★ ${player.name} achieved FLIP 7! Round ends.`);
+            return;
+        }
+        if (meta.kind === 'modAdd' || meta.kind === 'modX2') {
+            player.modifierCards.push({ label, kind: meta.kind, value: meta.value });
+            this.ui.log(`${player.name} drew modifier ${label}.`);
+            return;
+        }
+        if (meta.kind === 'sc') {
+            if (!player.hasSecondChance) {
+                player.hasSecondChance = true;
+                this.ui.log(`${player.name} keeps a SECOND CHANCE card.`);
+            } else {
+                const others = this.players.map((p, i) => i).filter(i => this.players[i].active && i !== playerIdx);
+                if (others.length === 0) {
+                    this.ui.log(`${player.name} already has a Second Chance and no one else is active — discarded.`);
+                    this.discardOne(label);
+                } else {
+                    const targetIdx = await this.ui.askChoosePlayer(`${player.name} already has a Second Chance. Who gets the new one?`, others);
+                    const target = this.players[targetIdx];
+                    if (!target.hasSecondChance) {
+                        target.hasSecondChance = true;
+                        this.ui.log(`${target.name} receives the extra SECOND CHANCE card.`);
+                    } else {
+                        this.ui.log(`${target.name} already has one too — discarded.`);
+                        this.discardOne(label);
+                    }
+                }
+            }
+            return;
+        }
+        if (meta.kind === 'freeze') {
+            const candidates = this.players.map((p, i) => i).filter(i => this.players[i].active);
+            let targetIdx;
+            if (candidates.length === 1) {
+                targetIdx = candidates[0];
+                this.ui.log(`Only one active player — FREEZE auto-targets ${this.players[targetIdx].name}.`);
+            } else {
+                targetIdx = await this.ui.askChoosePlayer(`${player.name} drew FREEZE. Choose the target:`, candidates);
+            }
+            const target = this.players[targetIdx];
+            target.active = false;
+            this.ui.log(`${target.name} is FROZEN and banks ${roundScore(target)} points.`);
+            this.discardOne(label);
+            return;
+        }
+        if (meta.kind === 'flip3') {
+            const candidates = this.players.map((p, i) => i).filter(i => this.players[i].active);
+            let targetIdx;
+            if (candidates.length === 1) {
+                targetIdx = candidates[0];
+                this.ui.log(`Only one active player — FLIP THREE auto-targets ${this.players[targetIdx].name}.`);
+            } else {
+                targetIdx = await this.ui.askChoosePlayer(`${player.name} drew FLIP THREE. Choose the target:`, candidates);
+            }
+            this.discardOne(label);
+            const deferred = []; let drawn = 0;
+            while (drawn < 3) {
+                const target = this.players[targetIdx];
+                if (target.busted || !target.active || hasFlip7(target)) break;
+                drawn++;
+                const nextLabel = await this.promptDrawnCard(target.name, `Flip Three ${drawn}/3`);
+                const nextMeta = this.meta[nextLabel];
+                if (nextMeta.kind === 'freeze' || nextMeta.kind === 'flip3') {
+                    deferred.push(nextLabel);
+                    this.ui.log(`(${nextLabel} revealed mid-Flip Three — resolved after all 3 cards are dealt.)`);
+                    continue;
+                }
+                await this.resolveCard(targetIdx, nextLabel);
+            }
+            for (const dLabel of deferred) {
+                const target = this.players[targetIdx];
+                if (target.busted || !target.active || hasFlip7(target)) {
+                    this.ui.log(`${dLabel} discarded (target no longer eligible).`);
+                    this.discardOne(dLabel);
+                    continue;
+                }
+                await this.resolveCard(targetIdx, dLabel);
+            }
+            return;
+        }
+    }
+    async playRound() {
+        this.roundNumber++;
+        for (const p of this.players) resetRound(p);
+        this.ui.log(`Round ${this.roundNumber} — dealer is ${this.players[this.dealerIndex].name}`, 'round');
+        this.ui.render();
+        const order = this.turnOrder();
+        for (const idx of order) {
+            if (this.roundIsOver()) break;
+            const label = await this.promptDrawnCard(this.players[idx].name, 'deal');
+            await this.resolveCard(idx, label);
+            this.ui.render();
+        }
+        while (!this.roundIsOver()) {
+            let progressed = false;
+            for (const idx of order) {
+                if (this.roundIsOver()) break;
+                const p = this.players[idx];
+                if (!p.active) continue;
+                progressed = true;
+                this.ui.render();
+                const choice = await this.ui.askHitStay(p);
+                if (choice === 's') {
+                    p.active = false;
+                    this.ui.log(`${p.name} stays with ${roundScore(p)} points.`);
+                } else {
+                    const label = await this.promptDrawnCard(p.name, 'hit');
+                    await this.resolveCard(idx, label);
+                }
+                this.ui.render();
+            }
+            if (!progressed) break;
+        }
+        this.endRound();
+    }
+    endRound() {
+        for (const p of this.players) {
+            const pts = roundScore(p);
+            p.totalScore += pts;
+            const status = p.busted ? 'BUSTED' : hasFlip7(p) ? 'FLIP 7' : 'stayed';
+            this.ui.log(`${p.name}: ${status}, +${pts} pts (total ${p.totalScore})`, 'result');
+            for (const c of p.numberCards) this.discardOne(c.label);
+            for (const c of p.modifierCards) this.discardOne(c.label);
+            if (p.hasSecondChance) this.discardOne('SECOND CHANCE');
+            p.numberCards = []; p.modifierCards = []; p.hasSecondChance = false;
+        }
+        this.dealerIndex = (this.dealerIndex + 1) % this.players.length;
+        this.ui.render();
+    }
+    async run() {
+        while (true) {
+            await this.playRound();
+            if (this.players.some(p => p.totalScore >= 200)) break;
+            await this.ui.askContinue();
+        }
+        const sorted = [...this.players].sort((a, b) => b.totalScore - a.totalScore);
+        this.ui.onGameOver(sorted);
+    }
+}
+
+// =====================================================================
+// UI wiring
+// =====================================================================
+
+const CARD_ORDER_NUMBERS = Array.from({ length: 13 }, (_, i) => String(i)); // "0".."12"
+const CARD_ORDER_MODS = ['+2', '+4', '+6', '+8', '+10', 'x2'];
+const CARD_ORDER_ACTIONS = ['FREEZE', 'FLIP THREE', 'SECOND CHANCE'];
+
+function numberColor(v) {
+    const hue = 206 - (206 - 8) * (v / 12);
+    return `hsl(${hue.toFixed(0)} 62% 40%)`;
+}
+
+let game = null;
+let currentTurnName = null;
+
+const el = id => document.getElementById(id);
+
+// ---- setup screen ----
+let playerCount = 4;
+function renderNameFields() {
+    const wrap = el('name-fields');
+    wrap.innerHTML = '';
+    for (let i = 0; i < playerCount; i++) {
+        const input = document.createElement('input');
+        input.placeholder = `Player ${i + 1}${i === 0 ? ' (dealer first)' : ''}`;
+        input.id = `name-${i}`;
+        wrap.appendChild(input);
+    }
+}
+el('dec-players').onclick = () => { playerCount = Math.max(2, playerCount - 1); el('player-count').textContent = playerCount; renderNameFields(); };
+el('inc-players').onclick = () => { playerCount = Math.min(18, playerCount + 1); el('player-count').textContent = playerCount; renderNameFields(); };
+renderNameFields();
+
+el('start-game-btn').onclick = () => {
+    const names = [];
+    for (let i = 0; i < playerCount; i++) {
+        const raw = el(`name-${i}`).value.trim();
+        names.push(raw || `Player ${i + 1}`);
+    }
+    el('setup-screen').hidden = true;
+    el('game-screen').hidden = false;
+    el('status-chip').hidden = false;
+    startGame(names);
+};
+
+el('new-game-btn').onclick = () => {
+    gen++; // abandon the finished game's generation
+    el('gameover-screen').hidden = true;
+    el('setup-screen').hidden = false;
+    el('log-panel').innerHTML = '';
+    el('status-chip').hidden = true;
+};
+
+// ---- log ----
+function logMessage(msg, kind) {
+    const line = document.createElement('div');
+    if (kind === 'round') line.className = 'log-round';
+    else if (kind === 'result') line.className = 'log-result';
+    line.textContent = msg;
+    el('log-panel').appendChild(line);
+    el('log-panel').scrollTop = el('log-panel').scrollHeight;
+}
+
+// ---- render players + deck ----
+function render() {
+    if (!game) return;
+    el('status-round').textContent = game.roundNumber || 1;
+    el('status-dealer').textContent = game.players[game.dealerIndex].name;
+
+    const row = el('players-row');
+    row.innerHTML = '';
+    game.players.forEach((p, idx) => {
+        const card = document.createElement('div');
+        card.className = 'player-card';
+        if (p.name === currentTurnName) card.classList.add('active-turn');
+        if (p.busted) card.classList.add('busted');
+        else if (!p.active) card.classList.add('stayed');
+
+        const nameRow = document.createElement('div');
+        nameRow.className = 'name-row';
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'name';
+        nameSpan.textContent = p.name;
+        nameRow.appendChild(nameSpan);
+        if (idx === game.dealerIndex) {
+            const chip = document.createElement('span');
+            chip.className = 'dealer-chip';
+            chip.textContent = 'Dealer';
+            nameRow.appendChild(chip);
+        }
+        card.appendChild(nameRow);
+
+        const score = document.createElement('div');
+        score.className = 'total-score';
+        score.textContent = p.totalScore;
+        card.appendChild(score);
+
+        const statusLine = document.createElement('div');
+        statusLine.className = 'status-line ' + (p.busted ? 'status-busted' : !p.active ? 'status-stayed' : 'status-active');
+        statusLine.textContent = p.busted ? 'Busted' : !p.active ? 'Stayed' : 'In round';
+        card.appendChild(statusLine);
+
+        const chips = document.createElement('div');
+        chips.className = 'card-chips';
+        numberValues(p).sort((a, b) => a - b).forEach(v => {
+            const c = document.createElement('span');
+            c.className = 'chip';
+            c.style.background = numberColor(v);
+            c.textContent = v;
+            chips.appendChild(c);
+        });
+        p.modifierCards.forEach(m => {
+            const c = document.createElement('span');
+            c.className = 'chip mod';
+            c.textContent = m.label;
+            chips.appendChild(c);
+        });
+        if (p.hasSecondChance) {
+            const c = document.createElement('span');
+            c.className = 'chip sc';
+            c.textContent = 'SC';
+            chips.appendChild(c);
+        }
+        card.appendChild(chips);
+
+        const scoreIfStay = document.createElement('div');
+        scoreIfStay.className = 'round-if-stay';
+        scoreIfStay.textContent = `Score if stay now: ${roundScore(p)}`;
+        card.appendChild(scoreIfStay);
+
+        row.appendChild(card);
+    });
+
+    el('deck-total').textContent = game.totalRemaining();
+    el('discard-total').textContent = game.totalDiscarded();
+    const compWrap = el('deck-composition');
+    compWrap.innerHTML = '';
+    [...CARD_ORDER_NUMBERS, ...CARD_ORDER_MODS, ...CARD_ORDER_ACTIONS].forEach(label => {
+        const count = game.remaining[label];
+        if (count > 0) {
+            const span = document.createElement('span');
+            span.textContent = `${label}:${count}`;
+            compWrap.appendChild(span);
+        }
+    });
+}
+
+// ---- action area builders ----
+function clearAction() { el('action-area').innerHTML = ''; }
+
+function makeCardButton(label, count, meta) {
+    const btn = document.createElement('button');
+    btn.className = 'card-btn' + (meta.kind === 'freeze' || meta.kind === 'flip3' || meta.kind === 'sc' ? ' action-card' : '');
+    btn.disabled = count <= 0;
+    if (meta.kind === 'number') {
+        btn.style.background = numberColor(meta.value);
+    } else if (meta.kind === 'modAdd' || meta.kind === 'modX2') {
+        btn.style.background = 'linear-gradient(160deg, var(--gold-bright), var(--gold))';
+        btn.style.color = 'var(--ink)';
+    } else if (meta.kind === 'freeze') {
+        btn.style.background = 'var(--freeze)';
+    } else if (meta.kind === 'flip3') {
+        btn.style.background = 'var(--flip3)';
+    } else if (meta.kind === 'sc') {
+        btn.style.background = 'var(--secondchance)';
+    }
+    const main = document.createElement('div');
+    main.textContent = label;
+    btn.appendChild(main);
+    const countEl = document.createElement('div');
+    countEl.className = 'count';
+    countEl.textContent = count > 0 ? `${count} left` : 'gone';
+    btn.appendChild(countEl);
+    return btn;
+}
+
+function realAskCardDraw(who, context, enabled) {
+    currentTurnName = who;
+    render();
+    const ctxLabel = context === 'deal' ? 'initial deal' : context === 'hit' ? 'hit' : context;
+    el('prompt-text').textContent = `Card drawn for ${who}`;
+    el('prompt-sub').textContent = `(${ctxLabel}) — tap the card that was actually revealed.`;
+    clearAction();
+
+    return new Promise(resolve => {
+        const build = (labels, sectionLabel) => {
+            const section = document.createElement('div');
+            section.className = 'card-grid-section';
+            const lab = document.createElement('div');
+            lab.className = 'card-grid-label';
+            lab.textContent = sectionLabel;
+            section.appendChild(lab);
+            const grid = document.createElement('div');
+            grid.className = 'card-grid';
+            labels.forEach(label => {
+                const count = game.remaining[label];
+                const meta = game.meta[label];
+                const btn = makeCardButton(label, count, meta);
+                btn.onclick = () => resolve(label);
+                grid.appendChild(btn);
+            });
+            section.appendChild(grid);
+            el('action-area').appendChild(section);
+        };
+        build(CARD_ORDER_NUMBERS, 'Number cards');
+        build(CARD_ORDER_MODS, 'Modifiers');
+        build(CARD_ORDER_ACTIONS, 'Action cards');
+    });
+}
+
+function realAskHitStay(player) {
+    currentTurnName = player.name;
+    render();
+    el('prompt-text').textContent = `${player.name}: Hit or Stay?`;
+    const bust = game.bustProbability(player).toFixed(1);
+    el('prompt-sub').textContent = `Score if stay now: ${roundScore(player)} pts`;
+    clearAction();
+    return new Promise(resolve => {
+        const bustDiv = document.createElement('div');
+        bustDiv.className = 'bust-prob';
+        bustDiv.innerHTML = `Bust probability if they hit: <b>${bust}%</b>`;
+        el('action-area').appendChild(bustDiv);
+
+        const row = document.createElement('div');
+        row.className = 'hitstay-row';
+        const hitBtn = document.createElement('button');
+        hitBtn.className = 'hit-btn';
+        hitBtn.textContent = 'HIT';
+        hitBtn.onclick = () => resolve('h');
+        const stayBtn = document.createElement('button');
+        stayBtn.className = 'stay-btn';
+        stayBtn.textContent = 'STAY';
+        stayBtn.onclick = () => resolve('s');
+        row.appendChild(hitBtn); row.appendChild(stayBtn);
+        el('action-area').appendChild(row);
+    });
+}
+
+function realAskChoosePlayer(promptText, candidateIdxs) {
+    el('prompt-text').textContent = promptText;
+    el('prompt-sub').textContent = 'Choose the target player.';
+    clearAction();
+    return new Promise(resolve => {
+        const row = document.createElement('div');
+        row.className = 'choice-row';
+        candidateIdxs.forEach(idx => {
+            const btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            btn.textContent = game.players[idx].name;
+            btn.onclick = () => resolve(idx);
+            row.appendChild(btn);
+        });
+        el('action-area').appendChild(row);
+    });
+}
+
+function realAskContinue() {
+    currentTurnName = null;
+    el('prompt-text').textContent = 'Round complete';
+    el('prompt-sub').textContent = 'Ready for the next round.';
+    clearAction();
+    return new Promise(resolve => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-primary';
+        btn.style.maxWidth = '260px';
+        btn.textContent = 'Start next round';
+        btn.onclick = () => resolve();
+        el('action-area').appendChild(btn);
+    });
+}
+
+function realOnGameOver(sorted) {
+    el('game-screen').hidden = true;
+    el('status-chip').hidden = true;
+    el('gameover-screen').hidden = false;
+    el('winner-line').textContent = `${sorted[0].name} wins with ${sorted[0].totalScore} points!`;
+    const standings = el('final-standings');
+    standings.innerHTML = '';
+    sorted.forEach(p => {
+        const line = document.createElement('div');
+        line.innerHTML = `<span>${p.name}</span><span>${p.totalScore}</span>`;
+        standings.appendChild(line);
+    });
+}
+
+// =====================================================================
+// Undo support: every real user answer (card drawn, hit/stay, target
+// choice, continue-to-next-round) is recorded in order in `inputLog`.
+// Undo pops the last entry and replays everything from a fresh Game,
+// instantly re-consuming the recorded entries in order until it catches
+// up to the live edge, then resumes asking the user normally. A `gen`
+// counter makes any in-flight (now-stale) async chain from before the
+// undo harmless: it just checks `g === gen` before touching the DOM or
+// recording anything, and is otherwise abandoned.
+// =====================================================================
+
+let allPlayerNames = [];
+let inputLog = [];
+let gen = 0;
+
+function updateUndoButton() {
+    el('undo-btn').disabled = inputLog.length === 0;
+}
+
+function undo() {
+    if (inputLog.length === 0) return;
+    inputLog.pop();
+    el('gameover-screen').hidden = true;
+    el('game-screen').hidden = false;
+    el('status-chip').hidden = false;
+    el('log-panel').innerHTML = '';
+    gen++;
+    runGeneration(gen);
+}
+el('undo-btn').onclick = undo;
+
+function runGeneration(g) {
+    let cursor = 0;
+
+    function wrapAsk(type, realFn) {
+        return async function (...args) {
+            if (cursor < inputLog.length && inputLog[cursor].type === type) {
+                const val = inputLog[cursor].value;
+                cursor++;
+                return val;
+            }
+            const val = await realFn(...args);
+            if (g !== gen) return new Promise(() => {}); // stale: abandon quietly
+            inputLog.push({ type, value: val });
+            cursor = inputLog.length;
+            updateUndoButton();
+            return val;
+        };
+    }
+
+    const ui = {
+        log: (msg, kind) => { if (g === gen) logMessage(msg, kind); },
+        render: () => { if (g === gen) render(); },
+        askCardDraw: wrapAsk('card', realAskCardDraw),
+        askHitStay: wrapAsk('hitstay', realAskHitStay),
+        askChoosePlayer: wrapAsk('choose', realAskChoosePlayer),
+        askContinue: wrapAsk('continue', realAskContinue),
+        onGameOver: (sorted) => { if (g === gen) realOnGameOver(sorted); },
+    };
+
+    game = new Game(allPlayerNames, ui);
+    window.game = game;
+    render();
+    updateUndoButton();
+    game.run();
+}
+
+function startGame(names) {
+    allPlayerNames = names;
+    inputLog = [];
+    gen++;
+    runGeneration(gen);
+}
+</script>
+
+</body>
+</html>
