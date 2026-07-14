@@ -22,7 +22,7 @@ Also has a console-based C++ version.
 
 Visit:
 
-https://aideneverageuf.github.io/Flip7-Tracker/
+[https://aideneverageuf.github.io/Flip7CardGameSolver/]
 
 (or open `index.html` locally)
 
