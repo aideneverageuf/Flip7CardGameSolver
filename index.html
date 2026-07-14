@@ -1009,17 +1009,6 @@ function realOnGameOver(sorted) {
     });
 }
 
-// =====================================================================
-// Undo support: every real user answer (card drawn, hit/stay, target
-// choice, continue-to-next-round) is recorded in order in `inputLog`.
-// Undo pops the last entry and replays everything from a fresh Game,
-// instantly re-consuming the recorded entries in order until it catches
-// up to the live edge, then resumes asking the user normally. A `gen`
-// counter makes any in-flight (now-stale) async chain from before the
-// undo harmless: it just checks `g === gen` before touching the DOM or
-// recording anything, and is otherwise abandoned.
-// =====================================================================
-
 let allPlayerNames = [];
 let inputLog = [];
 let gen = 0;
